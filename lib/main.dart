@@ -2,15 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:daily_english/models/lesson.dart';
+import 'package:daily_english/models/question.dart'; // ✅ جديد
 import 'package:daily_english/screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // ✅ تهيئة Hive وتسجيل LessonAdapter
+  // ✅ تهيئة Hive وتسجيل الـ Adapters
   await Hive.initFlutter();
   Hive.registerAdapter(LessonAdapter());
+  Hive.registerAdapter(QuestionAdapter()); // ✅ جديد
+
   await Hive.openBox<Lesson>('lessons');
+  await Hive.openBox<Question>('questions'); // ✅ جديد
 
   // ✅ تهيئة Supabase
   await Supabase.initialize(

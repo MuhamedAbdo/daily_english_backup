@@ -8,30 +8,47 @@ class LessonRepository {
 
   Future<void> syncLessonsFromSupabase() async {
     final remoteLessons = await _supabase.getLessons();
+    final remoteLessonObjects = remoteLessons.map((map) => Lesson.fromMap(map)).toList();
 
-    final lessonObjects = remoteLessons.map((map) => Lesson.fromMap(map)).toList();
+    int added = 0;
+    int updated = 0;
 
-    // اختياري: امسح البيانات القديمة
-    await _box.clear();
+    for (var remoteLesson in remoteLessonObjects) {
+      // هل الدرس موجود بالفعل في Hive؟
+      final localLesson = _box.values.where((l) => l.id == remoteLesson.id).cast<Lesson?>().firstOrNull;
 
-    // خزّن الدروس الجديدة
-    for (var lesson in lessonObjects) {
-      await _box.add(lesson);
+
+      if (localLesson == null) {
+        // جديد
+        await _box.add(remoteLesson);
+        added++;
+      } else if (remoteLesson.updatedAt.isAfter(localLesson.updatedAt)) {
+        // محدث
+        localLesson
+          ..lessonOrder = remoteLesson.lessonOrder
+          ..titleAr = remoteLesson.titleAr
+          ..titleEn = remoteLesson.titleEn
+          ..contentBlocks = remoteLesson.contentBlocks
+          ..words = remoteLesson.words
+          ..updatedAt = remoteLesson.updatedAt;
+
+        await localLesson.save();
+        updated++;
+      }
     }
 
-    print('✅ تم مزامنة ${lessonObjects.length} درس من Supabase إلى Hive');
+    print('✅ تمت المزامنة: $added مضافة، $updated محدثة');
   }
 
   List<Lesson> getAllLessons() {
     return _box.values.toList();
   }
 
- Lesson? getLessonById(int id) {
-  try {
-    return _box.values.firstWhere((l) => l.id == id);
-  } catch (e) {
-    return null;
+  Lesson? getLessonById(int id) {
+    try {
+      return _box.values.firstWhere((l) => l.id == id);
+    } catch (e) {
+      return null;
+    }
   }
-}
-
 }

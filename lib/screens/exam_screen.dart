@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:daily_english/models/question.dart';
+import 'package:daily_english/repositories/question_repository.dart';
 
 class ExamScreen extends StatefulWidget {
   final int lessonId;
@@ -11,55 +12,45 @@ class ExamScreen extends StatefulWidget {
 }
 
 class _ExamScreenState extends State<ExamScreen> {
-  late Future<List<Map<String, dynamic>>> questionsFuture;
+  final repo = QuestionRepository();
+  late Future<List<Question>> questionsFuture;
   int score = 0;
   final Map<int, String> selectedAnswers = {};
-  List<Map<String, dynamic>> questions = [];
+  List<Question> questions = [];
 
   @override
   void initState() {
     super.initState();
-    questionsFuture = _fetchQuestionsForLesson();
+    questionsFuture = _loadQuestions();
   }
 
-  Future<List<Map<String, dynamic>>> _fetchQuestionsForLesson() async {
-    final client = Supabase.instance.client;
+  Future<List<Question>> _loadQuestions() async {
+    final fromServer = await repo.fetchAndCacheQuestions(widget.lessonId);
+    if (fromServer.isNotEmpty) return fromServer;
 
-    final response = await client
-        .from('lessons')
-        .select('questions')
-        .eq('id', widget.lessonId)
-        .single();
-
-    final questionsJson = response['questions'] as List?;
-    if (questionsJson != null) {
-      return questionsJson.cast<Map<String, dynamic>>();
+    final fromCache = repo.getQuestionsFromCache(widget.lessonId);
+    if (fromCache.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("📦 تم عرض بيانات محفوظة (أوفلاين)")),
+      );
     }
-
-    return [];
+    return fromCache;
   }
 
   void _submitAnswers() {
     score = 0;
-
     for (var i = 0; i < questions.length; i++) {
       final userAnswer = selectedAnswers[i];
+      final correctAnswer = questions[i].correctAnswer;
+      final options = questions[i].options;
 
-      if (userAnswer != null) {
-        final correctAnswer = questions[i]['correct_answer'] as String?;
-        final options = (questions[i]['options'] as List?)?.map((e) => e.toString()).toList() ?? [];
+      final correctIndex = options.indexOf(correctAnswer);
+      final correctLetter = String.fromCharCode(65 + correctIndex); // A, B, C, D
 
-        if (options.isNotEmpty) {
-          final correctIndex = options.indexOf(correctAnswer ?? '') + 65;
-          final correctLetter = String.fromCharCode(correctIndex);
-
-          if (userAnswer == correctLetter) {
-            score++;
-          }
-        }
+      if (userAnswer == correctLetter) {
+        score++;
       }
     }
-
     _showResultDialog();
   }
 
@@ -67,8 +58,7 @@ class _ExamScreenState extends State<ExamScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('النتيجة',
-            textAlign: TextAlign.right),
+        title: const Text('النتيجة', textAlign: TextAlign.right),
         content: Text('أجبت بشكل صحيح على $score من ${questions.length} سؤال'),
         actions: [
           TextButton(
@@ -82,19 +72,15 @@ class _ExamScreenState extends State<ExamScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<Map<String, dynamic>>>(
+    return FutureBuilder<List<Question>>(
       future: questionsFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
+          return const Scaffold(body: Center(child: CircularProgressIndicator()));
         }
 
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const Scaffold(
-            body: Center(child: Text("لا توجد أسئلة لهذا الدرس")),
-          );
+          return const Scaffold(body: Center(child: Text("لا توجد أسئلة لهذا الدرس")));
         }
 
         questions = snapshot.data!;
@@ -105,19 +91,36 @@ class _ExamScreenState extends State<ExamScreen> {
             iconTheme: const IconThemeData(color: Colors.white),
             title: const Text("امتحان الدرس", style: TextStyle(color: Colors.white)),
             backgroundColor: Colors.deepPurple,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                tooltip: 'تحديث الأسئلة من الإنترنت',
+                onPressed: () async {
+                  final newQuestions = await repo.fetchAndCacheQuestions(widget.lessonId);
+                  if (newQuestions.isNotEmpty) {
+                    setState(() {
+                      questions = newQuestions;
+                      selectedAnswers.clear();
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("✅ تم تحديث الأسئلة من الإنترنت")),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("⚠️ لم يتم تحميل أي أسئلة")),
+                    );
+                  }
+                },
+              )
+            ],
           ),
           body: Padding(
-            padding: const EdgeInsets.only(bottom: 80.0), // <<< مساحة لأسفل لتجنب التغطية
+            padding: const EdgeInsets.only(bottom: 80.0),
             child: ListView.builder(
-              key: const Key('exam_list'),
               itemCount: questions.length,
               itemBuilder: (context, index) {
-                final question = questions[index];
-                final questionType = question['type'] ?? '';
-                final questionText = question['question_text'] ?? '';
-                final options = (question['options'] as List?)?.map((e) => e.toString()).toList() ?? [];
-                final imageUrl = question['image_url'] ?? '';
-
+                final q = questions[index];
+                final selected = selectedAnswers[index];
                 return Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Card(
@@ -127,69 +130,41 @@ class _ExamScreenState extends State<ExamScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          // ✅ عرض الصورة فقط في الأسئلة من نوع image_based
-                          if (questionType == 'image_based' && imageUrl.isNotEmpty)
+                          if (q.type == 'image_based' && q.imageUrl.isNotEmpty)
                             Padding(
                               padding: const EdgeInsets.symmetric(vertical: 8.0),
-                              child: Image.network(
-                                imageUrl,
-                                width: double.infinity,
-                                height: 180,
-                                fit: BoxFit.cover,
-                                loadingBuilder: (context, child, loadingProgress) {
-                                  if (loadingProgress == null) return child;
-                                  return const Center(child: CircularProgressIndicator());
-                                },
-                                errorBuilder: (_, __, ___) => const Text("فشل تحميل الصورة"),
-                              ),
+                              child: Image.network(q.imageUrl, height: 180, fit: BoxFit.cover),
                             ),
-
-                          // ✅ نص السؤال
-                          Text(
-                            questionText,
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                            textDirection: TextDirection.rtl,
-                          ),
+                          Text(q.questionText, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold), textDirection: TextDirection.rtl),
                           const SizedBox(height: 10),
-
-                          // ✅ عرض الخيارات فقط إذا كانت موجودة
-                          if (options.isNotEmpty)
-                            ListView.builder(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: options.length,
-                              itemBuilder: (context, optionIndex) {
-                                final optionLetter = String.fromCharCode(65 + optionIndex); // A, B, C, D
-                                final selected = selectedAnswers[index] == optionLetter;
-
-                                return Directionality(
-                                  textDirection: TextDirection.rtl,
-                                  child: ListTile(
-                                    title: Text('$optionLetter - ${options[optionIndex]}'),
-                                    leading: Radio<String>(
-                                      value: optionLetter,
-                                      groupValue: selectedAnswers[index],
-                                      onChanged: (value) {
-                                        setState(() {
-                                          selectedAnswers[index] = value!;
-                                        });
-                                      },
-                                    ),
-                                    tileColor: selected ? Colors.deepPurple.withOpacity(0.1) : null,
+                          ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: q.options.length,
+                            itemBuilder: (context, i) {
+                              final letter = String.fromCharCode(65 + i);
+                              return Directionality(
+                                textDirection: TextDirection.rtl,
+                                child: ListTile(
+                                  title: Text('$letter - ${q.options[i]}'),
+                                  leading: Radio<String>(
+                                    value: letter,
+                                    groupValue: selected,
+                                    onChanged: (value) {
+                                      setState(() {
+                                        selectedAnswers[index] = value!;
+                                      });
+                                    },
                                   ),
-                                );
-                              },
-                            ),
-
-                          const SizedBox(height: 10),
-
-                          // ✅ عرض الشرح عند اختيار إجابة
-                          if (question.containsKey('explanation') && selectedAnswers[index] != null)
-                            Text(
-                              "الشرح: ${question['explanation']}",
-                              style: const TextStyle(color: Colors.grey),
-                              textDirection: TextDirection.rtl,
-                            ),
+                                  tileColor: selected == letter
+                                      ? Colors.deepPurple.withOpacity(0.1)
+                                      : null,
+                                ),
+                              );
+                            },
+                          ),
+                          if (selected != null && q.explanation.isNotEmpty)
+                            Text("الشرح: ${q.explanation}", style: const TextStyle(color: Colors.grey), textDirection: TextDirection.rtl),
                         ],
                       ),
                     ),
@@ -198,23 +173,18 @@ class _ExamScreenState extends State<ExamScreen> {
               },
             ),
           ),
-
-          // ✅ زر في الأسفل لتجنب التغطية
           bottomSheet: Padding(
             padding: const EdgeInsets.all(16.0),
             child: ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
-                minimumSize: Size(150, 40),
-              
-                shape: RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(8)),
                 backgroundColor: Colors.deepPurple,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                alignment: Alignment.center,
+                minimumSize: const Size.fromHeight(48),
               ),
               onPressed: selectedAnswers.length == questions.length ? _submitAnswers : null,
-              icon: const Icon(Icons.check, color: Colors.white),
-              label: const Text("تقييم الإجابات", style: TextStyle(color: Colors.white)),
+              icon: const Icon(Icons.check),
+              label: const Text("تقييم الإجابات"),
             ),
           ),
         );
