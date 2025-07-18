@@ -26,6 +26,9 @@ class Lesson extends HiveObject {
   @HiveField(6)
   DateTime updatedAt;
 
+  @HiveField(7) // ✅ هذا هو الحقل الجديد
+  String? imagePath;
+
   Lesson({
     required this.id,
     required this.lessonOrder,
@@ -34,30 +37,26 @@ class Lesson extends HiveObject {
     required this.contentBlocks,
     required this.words,
     required this.updatedAt,
+    this.imagePath,
   });
 
-  /// ✅ لتحويل البيانات من Supabase إلى كائن Lesson
   factory Lesson.fromMap(Map<String, dynamic> map) {
     return Lesson(
       id: map['id'] ?? 0,
       lessonOrder: map['lesson_order'] ?? 0,
       titleAr: map['title_ar'] ?? '',
       titleEn: map['title_en'] ?? '',
-
-      // ✅ تحويل أي قائمة JSON إلى String
       contentBlocks: map['content_blocks'] is String
           ? map['content_blocks']
           : jsonEncode(map['content_blocks']),
-
       words: map['words'] is String
           ? map['words']
           : jsonEncode(map['words']),
-
       updatedAt: DateTime.tryParse(map['updated_at'] ?? '') ?? DateTime.now(),
+      imagePath: null, // 👈 مبدئيًا بنخليها null وبتتعدل لاحقًا
     );
   }
 
-  /// ✅ لتحويل الكائن إلى Map (اختياري لو حبيت ترسله كـ JSON)
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -67,6 +66,7 @@ class Lesson extends HiveObject {
       'content_blocks': contentBlocks,
       'words': words,
       'updated_at': updatedAt.toIso8601String(),
+      'image_path': imagePath,
     };
   }
 }

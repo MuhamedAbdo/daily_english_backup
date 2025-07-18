@@ -22,6 +22,9 @@ class Question extends HiveObject {
   @HiveField(5)
   String type;
 
+  @HiveField(6) // ✅ مسار الصورة المحلي (أوفلاين)
+  String? localImagePath;
+
   Question({
     required this.questionText,
     required this.options,
@@ -29,6 +32,7 @@ class Question extends HiveObject {
     required this.explanation,
     required this.imageUrl,
     required this.type,
+    this.localImagePath,
   });
 
   factory Question.fromMap(Map<String, dynamic> map) {
@@ -39,6 +43,7 @@ class Question extends HiveObject {
       explanation: map['explanation'] ?? '',
       imageUrl: map['image_url'] ?? '',
       type: map['type'] ?? '',
+      localImagePath: map['local_image_path'], // ✅
     );
   }
 
@@ -50,6 +55,7 @@ class Question extends HiveObject {
       'explanation': explanation,
       'image_url': imageUrl,
       'type': type,
+      'local_image_path': localImagePath, // ✅
     };
   }
 }

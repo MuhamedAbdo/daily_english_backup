@@ -1,23 +1,51 @@
 import 'dart:convert';
-
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:daily_english/screens/new_words_screen.dart';
-import 'package:daily_english/screens/exam_screen.dart'; // ✅ تم الإضافة
+import 'package:daily_english/screens/exam_screen.dart';
 
 class LessonDetailScreen extends StatelessWidget {
   final Map<String, dynamic> lesson;
 
   const LessonDetailScreen({super.key, required this.lesson});
 
-  // ✅ دالة لتحويل \\n إلى \n
+  /// 🔧 دالة لتحويل \\n إلى \n
   String fixLineBreaks(String text) {
     return text.replaceAll(r'\n', '\n');
+  }
+
+  /// ✅ دالة ذكية لعرض الصورة من الملف المحلي أو الإنترنت
+  Widget buildImage(String url, {double height = 180}) {
+    final local = File(url);
+    final isLocal = url.startsWith('/') && local.existsSync();
+
+    if (isLocal) {
+      return Image.file(
+        local,
+        width: double.infinity,
+        height: height,
+        fit: BoxFit.cover,
+      );
+    } else {
+      return Image.network(
+        url,
+        width: double.infinity,
+        height: height,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return const Center(child: CircularProgressIndicator());
+        },
+        errorBuilder: (_, __, ___) => const Text("فشل تحميل الصورة"),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final rawBlocks = lesson['content_blocks'];
-    final contentBlocks = rawBlocks is String ? jsonDecode(rawBlocks) : (rawBlocks ?? []);
+    final contentBlocks =
+        rawBlocks is String ? jsonDecode(rawBlocks) : (rawBlocks ?? []);
 
     return Scaffold(
       appBar: AppBar(
@@ -64,7 +92,8 @@ class LessonDetailScreen extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => NewWordsScreen(lesson: lesson),
+                            builder: (context) =>
+                                NewWordsScreen(lesson: lesson),
                           ),
                         );
                       },
@@ -91,13 +120,15 @@ class LessonDetailScreen extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => ExamScreen(lessonId: lessonId),
+                              builder: (context) =>
+                                  ExamScreen(lessonId: lessonId),
                             ),
                           );
                         } else {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                                content: Text('لا يمكن فتح الامتحان: معرف الدرس غير متوفر')),
+                                content: Text(
+                                    'لا يمكن فتح الامتحان: معرف الدرس غير متوفر')),
                           );
                         }
                       },
@@ -127,7 +158,7 @@ class LessonDetailScreen extends StatelessWidget {
     final value = fixLineBreaks(block['value'] ?? '');
     final en = block['en'] ?? '';
     final ar = fixLineBreaks(block['ar'] ?? '');
-    final imageUrl = block['image_url'] ?? '';
+    final imageUrl = block['local_image_path'] ?? block['image_url'] ?? '';
 
     switch (type) {
       case 'text':
@@ -136,21 +167,10 @@ class LessonDetailScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              // ✅ عرض الصورة فقط إذا كانت موجودة
               if (imageUrl.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8.0),
-                  child: Image.network(
-                    imageUrl,
-                    width: double.infinity,
-                    height: 300,
-                    fit: BoxFit.cover,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return const Center(child: CircularProgressIndicator());
-                    },
-                    errorBuilder: (_, __, ___) => const Text("فشل تحميل الصورة"),
-                  ),
+                  child: buildImage(imageUrl, height: 300),
                 ),
               Text(
                 value,
@@ -172,17 +192,7 @@ class LessonDetailScreen extends StatelessWidget {
               if (imageUrl.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8.0),
-                  child: Image.network(
-                    imageUrl,
-                    width: double.infinity,
-                    height: 150,
-                    fit: BoxFit.fitWidth,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return const Center(child: CircularProgressIndicator());
-                    },
-                    errorBuilder: (_, __, ___) => const Text("فشل تحميل الصورة"),
-                  ),
+                  child: buildImage(imageUrl, height: 150),
                 ),
               Text(
                 value,
@@ -223,17 +233,7 @@ class LessonDetailScreen extends StatelessWidget {
               if (imageUrl.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8.0),
-                  child: Image.network(
-                    imageUrl,
-                    width: double.infinity,
-                    height: 180,
-                    fit: BoxFit.cover,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return const Center(child: CircularProgressIndicator());
-                    },
-                    errorBuilder: (_, __, ___) => const Text("فشل تحميل الصورة"),
-                  ),
+                  child: buildImage(imageUrl, height: 180),
                 ),
               const Divider()
             ],

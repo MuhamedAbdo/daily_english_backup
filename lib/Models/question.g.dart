@@ -23,13 +23,14 @@ class QuestionAdapter extends TypeAdapter<Question> {
       explanation: fields[3] as String,
       imageUrl: fields[4] as String,
       type: fields[5] as String,
+      localImagePath: fields[6] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Question obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(7)
       ..writeByte(0)
       ..write(obj.questionText)
       ..writeByte(1)
@@ -41,7 +42,9 @@ class QuestionAdapter extends TypeAdapter<Question> {
       ..writeByte(4)
       ..write(obj.imageUrl)
       ..writeByte(5)
-      ..write(obj.type);
+      ..write(obj.type)
+      ..writeByte(6)
+      ..write(obj.localImagePath);
   }
 
   @override

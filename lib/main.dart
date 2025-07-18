@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:daily_english/models/lesson.dart';
-import 'package:daily_english/models/question.dart'; // ✅ جديد
+import 'package:daily_english/models/question.dart';
 import 'package:daily_english/screens/splash_screen.dart';
 
 void main() async {
@@ -11,10 +11,10 @@ void main() async {
   // ✅ تهيئة Hive وتسجيل الـ Adapters
   await Hive.initFlutter();
   Hive.registerAdapter(LessonAdapter());
-  Hive.registerAdapter(QuestionAdapter()); // ✅ جديد
+  Hive.registerAdapter(QuestionAdapter());
 
   await Hive.openBox<Lesson>('lessons');
-  await Hive.openBox<Question>('questions'); // ✅ جديد
+  await Hive.openBox<Question>('questions');
 
   // ✅ تهيئة Supabase
   await Supabase.initialize(
@@ -22,15 +22,6 @@ void main() async {
     anonKey:
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ncGJ1dXNnd3NrdWF1cG1sd2V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3NjkwMTIsImV4cCI6MjA2ODM0NTAxMn0.rT7dg6dJSzi_t5qOK0y64nAiyWMTJzK4YSW_0UJE6CA',
   );
-
-  // ✅ اختبار الاتصال بـ Supabase
-  try {
-    final response =
-        await Supabase.instance.client.from('lessons').select().count();
-    print('✅ Supabase connection: ${response.count} lessons found.');
-  } catch (e) {
-    print('❌ Supabase connection error: $e');
-  }
 
   runApp(const MyApp());
 }

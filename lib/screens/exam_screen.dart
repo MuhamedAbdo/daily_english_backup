@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:daily_english/models/question.dart';
 import 'package:daily_english/repositories/question_repository.dart';
@@ -45,7 +46,7 @@ class _ExamScreenState extends State<ExamScreen> {
       final options = questions[i].options;
 
       final correctIndex = options.indexOf(correctAnswer);
-      final correctLetter = String.fromCharCode(65 + correctIndex); // A, B, C, D
+      final correctLetter = String.fromCharCode(65 + correctIndex);
 
       if (userAnswer == correctLetter) {
         score++;
@@ -68,6 +69,32 @@ class _ExamScreenState extends State<ExamScreen> {
         ],
       ),
     );
+  }
+
+  Widget buildImage(String url, {double height = 180}) {
+    final file = File(url);
+    final isLocal = url.startsWith('/') && file.existsSync();
+
+    if (isLocal) {
+      return Image.file(
+        file,
+        height: height,
+        width: double.infinity,
+        fit: BoxFit.cover,
+      );
+    } else {
+      return Image.network(
+        url,
+        height: height,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return const Center(child: CircularProgressIndicator());
+        },
+        errorBuilder: (_, __, ___) => const Text("فشل تحميل الصورة"),
+      );
+    }
   }
 
   @override
@@ -121,6 +148,10 @@ class _ExamScreenState extends State<ExamScreen> {
               itemBuilder: (context, index) {
                 final q = questions[index];
                 final selected = selectedAnswers[index];
+                final imagePath = q.localImagePath?.isNotEmpty == true
+                    ? q.localImagePath!
+                    : q.imageUrl;
+
                 return Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Card(
@@ -130,12 +161,16 @@ class _ExamScreenState extends State<ExamScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          if (q.type == 'image_based' && q.imageUrl.isNotEmpty)
+                          if (q.type == 'image_based' && imagePath.isNotEmpty)
                             Padding(
                               padding: const EdgeInsets.symmetric(vertical: 8.0),
-                              child: Image.network(q.imageUrl, height: 180, fit: BoxFit.cover),
+                              child: buildImage(imagePath),
                             ),
-                          Text(q.questionText, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold), textDirection: TextDirection.rtl),
+                          Text(
+                            q.questionText,
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                            textDirection: TextDirection.rtl,
+                          ),
                           const SizedBox(height: 10),
                           ListView.builder(
                             shrinkWrap: true,
@@ -164,7 +199,11 @@ class _ExamScreenState extends State<ExamScreen> {
                             },
                           ),
                           if (selected != null && q.explanation.isNotEmpty)
-                            Text("الشرح: ${q.explanation}", style: const TextStyle(color: Colors.grey), textDirection: TextDirection.rtl),
+                            Text(
+                              "الشرح: ${q.explanation}",
+                              style: const TextStyle(color: Colors.grey),
+                              textDirection: TextDirection.rtl,
+                            ),
                         ],
                       ),
                     ),
