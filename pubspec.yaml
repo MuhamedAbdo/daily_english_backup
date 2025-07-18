@@ -1,0 +1,51 @@
+name: daily_english
+description: "A new Flutter project."
+
+# Avoid publishing to pub.dev accidentally.
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.8.0 <4.0.0"
+
+# Dependencies needed for the app to run.
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  flutter_tts: ^4.2.3
+  supabase_flutter: ^2.9.1
+  shared_preferences: ^2.5.3
+  change_app_package_name: ^1.5.0
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  path_provider: ^2.1.1
+
+# Dev dependencies used for development and testing.
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+  build_runner: ^2.5.4
+  hive_generator: ^2.0.1
+  analyzer: ^6.11.0
+
+
+# Flutter-specific configuration.
+flutter:
+  # Enables the use of Material Icons.
+  uses-material-design: true
+
+  # Assets used in the app.
+  assets:
+    - assets/images/logo.png
+    - assets/fonts/Cairo-Regular.ttf
+
+  # Custom fonts used in the app.
+  fonts:
+    - family: Cairo
+      fonts:
+        - asset: assets/fonts/Cairo-Regular.ttf
