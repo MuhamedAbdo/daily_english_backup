@@ -167,10 +167,14 @@ class _ExamScreenState extends State<ExamScreen> {
                               child: buildImage(imagePath),
                             ),
                           Text(
-                            q.questionText,
-                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                            textDirection: TextDirection.rtl,
-                          ),
+  q.questionText,
+  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+  textDirection: q.questionText.contains(RegExp(r'[a-zA-Z]'))
+      ? TextDirection.ltr
+      : TextDirection.rtl,
+      textAlign: TextAlign.left,
+),
+
                           const SizedBox(height: 10),
                           ListView.builder(
                             shrinkWrap: true,
@@ -181,7 +185,9 @@ class _ExamScreenState extends State<ExamScreen> {
                               return Directionality(
                                 textDirection: TextDirection.rtl,
                                 child: ListTile(
-                                  title: Text('$letter - ${q.options[i]}'),
+                                  title: Text('$letter - ${q.options[i]}',
+                                  textDirection: TextDirection.ltr,
+                                  ),
                                   leading: Radio<String>(
                                     value: letter,
                                     groupValue: selected,
