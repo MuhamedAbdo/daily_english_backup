@@ -44,14 +44,15 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset(
-              'assets/images/logo.png',
-              width: 200,
-              height: 200,
-              fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) {
-                return const Icon(Icons.error_outline, size: 100, color: Colors.red);
-              },
+            // ✅ الصورة مع زوايا ناعمة (ClipRRect)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(35.0), // ✅ نصف قطر الزوايا
+              child: Image.asset(
+                'assets/images/logo.png',
+                width: 200,
+                height: 200,
+                fit: BoxFit.contain,
+              ),
             ),
             const SizedBox(height: 20),
             const Text(

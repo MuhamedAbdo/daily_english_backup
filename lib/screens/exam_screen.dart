@@ -172,16 +172,21 @@ class _ExamScreenState extends State<ExamScreen> {
                             textDirection: TextDirection.rtl,
                           ),
                           const SizedBox(height: 10),
-                          ListView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: q.options.length,
-                            itemBuilder: (context, i) {
-                              final letter = String.fromCharCode(65 + i);
-                              return Directionality(
-                                textDirection: TextDirection.rtl,
-                                child: ListTile(
-                                  title: Text('$letter - ${q.options[i]}'),
+                          // ✅ إعداد الخيارات لتظهر بمحاذاة LTR
+                          Directionality(
+                            textDirection: TextDirection.ltr,
+                            child: ListView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: q.options.length,
+                              itemBuilder: (context, i) {
+                                final letter = String.fromCharCode(65 + i);
+                                return ListTile(
+                                  title: Text(
+                                    '$letter - ${q.options[i]}',
+                                    textAlign: TextAlign.left,
+                                    style: const TextStyle(fontSize: 16),
+                                  ),
                                   leading: Radio<String>(
                                     value: letter,
                                     groupValue: selected,
@@ -194,10 +199,11 @@ class _ExamScreenState extends State<ExamScreen> {
                                   tileColor: selected == letter
                                       ? Colors.deepPurple.withOpacity(0.1)
                                       : null,
-                                ),
-                              );
-                            },
+                                );
+                              },
+                            ),
                           ),
+                          const SizedBox(height: 10),
                           if (selected != null && q.explanation.isNotEmpty)
                             Text(
                               "الشرح: ${q.explanation}",
