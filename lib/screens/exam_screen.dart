@@ -80,14 +80,14 @@ class _ExamScreenState extends State<ExamScreen> {
         file,
         height: height,
         width: double.infinity,
-        fit: BoxFit.cover,
+        fit: BoxFit.fill,
       );
     } else {
       return Image.network(
         url,
         height: height,
         width: double.infinity,
-        fit: BoxFit.cover,
+        fit: BoxFit.fill,
         loadingBuilder: (context, child, loadingProgress) {
           if (loadingProgress == null) return child;
           return const Center(child: CircularProgressIndicator());
@@ -167,25 +167,26 @@ class _ExamScreenState extends State<ExamScreen> {
                               child: buildImage(imagePath),
                             ),
                           Text(
-  q.questionText,
-  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-  textDirection: q.questionText.contains(RegExp(r'[a-zA-Z]'))
-      ? TextDirection.ltr
-      : TextDirection.rtl,
-      textAlign: TextAlign.left,
-),
-
+                            q.questionText,
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                            textDirection: TextDirection.rtl,
+                          ),
                           const SizedBox(height: 10),
-                          ListView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: q.options.length,
-                            itemBuilder: (context, i) {
-                              final letter = String.fromCharCode(65 + i);
-                              return Directionality(
-                                textDirection: TextDirection.rtl,
-                                child: ListTile(
-                                  title: Text('$letter - ${q.options[i]}'),
+                          // ✅ إعداد الخيارات لتظهر بمحاذاة LTR
+                          Directionality(
+                            textDirection: TextDirection.ltr,
+                            child: ListView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: q.options.length,
+                              itemBuilder: (context, i) {
+                                final letter = String.fromCharCode(65 + i);
+                                return ListTile(
+                                  title: Text(
+                                    '$letter - ${q.options[i]}',
+                                    textAlign: TextAlign.left,
+                                    style: const TextStyle(fontSize: 16),
+                                  ),
                                   leading: Radio<String>(
                                     value: letter,
                                     groupValue: selected,

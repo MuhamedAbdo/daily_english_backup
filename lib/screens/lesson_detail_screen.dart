@@ -15,7 +15,7 @@ class LessonDetailScreen extends StatelessWidget {
   }
 
   /// ✅ دالة ذكية لعرض الصورة من الملف المحلي أو الإنترنت
-  Widget buildImage(String url, {double height = 180}) {
+  Widget buildImage(String url, {double height = 250}) {
     final local = File(url);
     final isLocal = url.startsWith('/') && local.existsSync();
 
@@ -24,14 +24,14 @@ class LessonDetailScreen extends StatelessWidget {
         local,
         width: double.infinity,
         height: height,
-        fit: BoxFit.cover,
+        fit: BoxFit.fill,
       );
     } else {
       return Image.network(
         url,
         width: double.infinity,
         height: height,
-        fit: BoxFit.cover,
+        fit: BoxFit.fill,
         loadingBuilder: (context, child, loadingProgress) {
           if (loadingProgress == null) return child;
           return const Center(child: CircularProgressIndicator());
