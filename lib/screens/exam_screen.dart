@@ -167,26 +167,25 @@ class _ExamScreenState extends State<ExamScreen> {
                               child: buildImage(imagePath),
                             ),
                           Text(
-                            q.questionText,
-                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                            textDirection: TextDirection.rtl,
-                          ),
+  q.questionText,
+  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+  textDirection: q.questionText.contains(RegExp(r'[a-zA-Z]'))
+      ? TextDirection.ltr
+      : TextDirection.rtl,
+      textAlign: TextAlign.left,
+),
+
                           const SizedBox(height: 10),
-                          // ✅ إعداد الخيارات لتظهر بمحاذاة LTR
-                          Directionality(
-                            textDirection: TextDirection.ltr,
-                            child: ListView.builder(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: q.options.length,
-                              itemBuilder: (context, i) {
-                                final letter = String.fromCharCode(65 + i);
-                                return ListTile(
-                                  title: Text(
-                                    '$letter - ${q.options[i]}',
-                                    textAlign: TextAlign.left,
-                                    style: const TextStyle(fontSize: 16),
-                                  ),
+                          ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: q.options.length,
+                            itemBuilder: (context, i) {
+                              final letter = String.fromCharCode(65 + i);
+                              return Directionality(
+                                textDirection: TextDirection.rtl,
+                                child: ListTile(
+                                  title: Text('$letter - ${q.options[i]}'),
                                   leading: Radio<String>(
                                     value: letter,
                                     groupValue: selected,
