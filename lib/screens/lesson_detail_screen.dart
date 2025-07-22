@@ -155,13 +155,13 @@ class LessonDetailScreen extends StatelessWidget {
 
   Widget _buildContentBlock(Map<String, dynamic> block) {
     final type = block['type'] ?? '';
-    final value = fixLineBreaks(block['value'] ?? '');
     final en = block['en'] ?? '';
     final ar = fixLineBreaks(block['ar'] ?? '');
     final imageUrl = block['local_image_path'] ?? block['image_url'] ?? '';
 
     switch (type) {
       case 'text':
+        final value = fixLineBreaks(block['value'] ?? '');
         return Directionality(
           textDirection: TextDirection.rtl,
           child: Column(
@@ -184,6 +184,7 @@ class LessonDetailScreen extends StatelessWidget {
         );
 
       case 'english_word':
+        final value = fixLineBreaks(block['value'] ?? '');
         return Directionality(
           textDirection: TextDirection.ltr,
           child: Column(
@@ -235,8 +236,42 @@ class LessonDetailScreen extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 8.0),
                   child: buildImage(imageUrl, height: 180),
                 ),
-              const Divider()
+              const Divider(),
             ],
+          ),
+        );
+
+      case 'table':
+        final tableData = block['value'] as List?; // ✅ هنا يتم قراءة القائمة مباشرة
+        if (tableData == null || tableData.isEmpty) return Container();
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Directionality(
+            textDirection: TextDirection.ltr,
+            child: Table(
+              border: TableBorder.all(color: Colors.grey),
+              defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+              columnWidths: const <int, TableColumnWidth>{
+                0: FlexColumnWidth(2),
+                1: FlexColumnWidth(2),
+                2: FlexColumnWidth(3), // إذا كان الجدول له 3 أعمدة
+              },
+              children: tableData.map<TableRow>((row) {
+                final cells = row is List ? row : [row];
+                return TableRow(
+                  decoration: BoxDecoration(color: Colors.grey.shade100),
+                  children: cells.map((cell) => Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Text(
+                      cell.toString(),
+                      style: const TextStyle(fontSize: 14),
+                      textAlign: TextAlign.center,
+                    ),
+                  )).toList(),
+                );
+              }).toList(),
+            ),
           ),
         );
 
