@@ -242,35 +242,113 @@ class LessonDetailScreen extends StatelessWidget {
         );
 
       case 'table':
-        final tableData = block['value'] as List?; // ✅ هنا يتم قراءة القائمة مباشرة
+        final tableData = block['value'] as List?;
         if (tableData == null || tableData.isEmpty) return Container();
+
+        // تحديد عدد الأعمدة
+        final maxColumns = tableData
+            .map<int>((row) => row is List ? row.length : 1)
+            .reduce((a, b) => a > b ? a : b);
+
+        // ✅ إنشاء ScrollController فقط مرة واحدة
+        final ScrollController _scrollController = ScrollController();
+
+        // ✅ تأكد من تنظيف الـ Controller عند التدمير
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!_scrollController.hasClients) {
+            // لا تفعل شيء، الـ controller سيُعاد تهيئته عند البناء
+          }
+        });
 
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: Directionality(
-            textDirection: TextDirection.ltr,
-            child: Table(
-              border: TableBorder.all(color: Colors.grey),
-              defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-              columnWidths: const <int, TableColumnWidth>{
-                0: FlexColumnWidth(2),
-                1: FlexColumnWidth(2),
-                2: FlexColumnWidth(3), // إذا كان الجدول له 3 أعمدة
-              },
-              children: tableData.map<TableRow>((row) {
-                final cells = row is List ? row : [row];
-                return TableRow(
-                  decoration: BoxDecoration(color: Colors.grey.shade100),
-                  children: cells.map((cell) => Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Text(
-                      cell.toString(),
-                      style: const TextStyle(fontSize: 14),
-                      textAlign: TextAlign.center,
+          child: SizedBox(
+            width: double.infinity,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                // ✅ الجدول مع التمرير الأفقي
+                SizedBox(
+                  width: double.infinity,
+                  child: SingleChildScrollView(
+                    controller: _scrollController,
+                    scrollDirection: Axis.horizontal,
+                    child: DataTable(
+                      columns: List<DataColumn>.generate(
+                        maxColumns,
+                        (index) {
+                          final firstRow = tableData.first is List ? tableData.first : [];
+                          final header = index < firstRow.length ? firstRow[index]?.toString() ?? '' : '';
+                          return DataColumn(
+                            label: Text(
+                              header,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          );
+                        },
+                      ),
+                      dataRowColor: MaterialStateProperty.resolveWith<Color?>(
+                        (states) => states.contains(MaterialState.selected)
+                            ? Colors.grey.shade300
+                            : Colors.grey.shade100,
+                      ),
+                      headingRowColor: MaterialStateProperty.all(Colors.deepPurple),
+                      dividerThickness: 2,
+                      dataRowHeight: 50,
+                      headingRowHeight: 45,
+                      border: TableBorder.all(
+                        color: Colors.grey.shade400,
+                        width: 1,
+                      ),
+                      rows: tableData.skip(1).map<DataRow>((row) {
+                        final cells = row is List ? row : [row];
+                        return DataRow(
+                          cells: List<DataCell>.generate(
+                            maxColumns,
+                            (index) {
+                              final content = index < cells.length
+                                  ? cells[index]?.toString() ?? ''
+                                  : '';
+                              return DataCell(
+                                Text(
+                                  content,
+                                  textAlign: TextAlign.center,
+                                  softWrap: false,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(fontSize: 14),
+                                ),
+                              );
+                            },
+                          ),
+                        );
+                      }).toList(),
                     ),
-                  )).toList(),
-                );
-              }).toList(),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                // ✅ مؤشر التمرير يظهر أسفل الجدول
+                SizedBox(
+                  height: 6,
+                  child: Scrollbar(
+                    controller: _scrollController,
+                    thickness: 8,
+                    thumbVisibility: true,
+                    notificationPredicate: (notification) => notification.depth == 1,
+                    child: PrimaryScrollController(
+                      controller: _scrollController,
+                      child: const SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: SizedBox(height: 1, width: 1000),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         );
